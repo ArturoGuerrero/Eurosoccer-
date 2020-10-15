@@ -1,0 +1,164 @@
+---
+title: "Análisis de correlación Eurosoccer"
+author: "Arturo Guerrero Enterría"
+date: "1/10/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+
+
+```{r include=FALSE}
+library(WRS2)
+library(ggplot2)
+library(ppcor)
+library(pwr)
+library(MASS)
+data(eurosoccer)
+```
+
+
+```{r eval=FALSE, include=FALSE}
+summary(eurosoccer)
+```
+
+```{r eval=FALSE, include=FALSE}
+head(eurosoccer)
+```
+
+## Visualización de correlación para la variable puntos (Points) y la variable goles marcados (GoalsScored)
+
+
+```{r}
+ggplot(data=eurosoccer,
+       aes(x=Points,
+           y=GoalsScored,
+           color = League))+  geom_point()+
+           labs( title = "Gráfico de dispersión de puntos obtenidos por goles marcados", 
+        y = "Goles marcados",
+        x = "Puntos obtenidos",
+        
+        caption = "Gráfico 1") +
+  theme(plot.title = element_text (size = 19),
+        axis.title = element_text (size = 15),
+        axis.title.x = element_text(hjust = 0.5))+
+  theme_dark()
+```
+
+
+En el gráfico 1 observamos una correlación lineal, con escasos outliers, con una dirección positiva y una magnitud alta.
+
+
+## Cáluculo de la correlación
+
+
+```{r}
+cor(x=eurosoccer$GoalsScored,
+    y=eurosoccer$Points)
+```
+
+Se lleva a cabo el cálculo de la correlación con el método Pearson, ya que la relación es lineal, no incorpora muchos outliers y hay suficientes datos. 
+El resultado muestra una correlación positiva y tendente a ser alta 0.87. 
+
+Si se hace el cálculo de correlación con el método Spearman se refuerza esa correlación positiva a 0.88, ya que este método permite una menor influencia de los outliers.
+
+```{r}
+cor(x=eurosoccer$GoalsScored,
+    y=eurosoccer$Points,
+    method = "spearman")
+```
+
+
+## Prueba de hipótesis goles recibidos puntos obtenidos
+
+
+Una vez vista esta correlación, me gustaría responder a una pregunta: ¿Qué importancia tiene la defensa para la obtención de mejores resultados de un equipo? Para ello se observa la relación de los goles concedidos frente a los puntos obtenidos. 
+
+La hipótesis cero establece que no hay relación entre los goles concedidos y los puntos obtenidos. La hipótesis 1 afirma que hay relación entre goles concedidos y puntos obtenidos.
+
+Para ello utilizaremos un nivel de confianza estándar 95% y rechazaremos la hipótesis cero si p<0.5.
+
+Para comenzar la prueba de hipótesis haremos una visualización incial.
+
+
+```{r}
+ggplot(data=eurosoccer,
+       aes(x=Points,
+           y=GoalsConceded,
+           color = League))+  geom_point()+
+           labs( title = "Gráfico de dispersión de puntos obtenidos por goles concedidos", 
+        y = "Goles concedidos",
+        x = "Puntos obtenidos",
+        
+        
+        caption = "Gráfico 1") +
+  theme(plot.title = element_text (size = 19),
+        axis.title = element_text (size = 15),
+        axis.title.x = element_text(hjust = 0.5))+
+  theme_dark()
+```
+
+
+A priori se observa una correlación lineal, negativa, con algunos outliers con una magnitud media-alta.
+
+Si llevamos a cabo el cálculo con la correlación de Pearson obtenemos una correlación de:
+```{r}
+cor(x=eurosoccer$GoalsConceded,
+    y=eurosoccer$Points)
+```
+
+Lo que nos muestra una correlación media-alta.
+
+```{r include=FALSE}
+cor(x=eurosoccer$GoalsConceded,
+    y=eurosoccer$Points,
+    method = "spearman")
+```
+
+```{r include=FALSE}
+shapiro.test(eurosoccer$GoalsConceded)
+```
+
+```{r include=FALSE}
+shapiro.test(eurosoccer$Points)
+```
+```{r echo=FALSE}
+cor.test(x=eurosoccer$GoalsConceded,
+    y=eurosoccer$Points)
+```
+
+A continuación comprobamos que la correlación es estadísticamente significativa, negativa y media-alta ( t(94)=-11, p<0.01, r=-.75) con un intervalo de confianza(64-82).
+
+De ello podemos desprender que el papel que juega la defensa es de una importancia media-alta, ya que cuantos menos goles conceda, mayor será la puntuación que obtenga su equipo.
+Sin embargo, si lo comparamos con el papel de la delantera, observamos que estadísticamente es más importante obtener más goles que recibirlos.
+Lo interesante podría ser, ahora, analizar que sucede con la diferencia entre goles recibidos y goles obtenido para ver como se comporta esa variable.
+
+
+## Potencia estadística
+
+
+```{r}
+pwr.r.test(r=-0.75, n=96, sig.level = 0.05)
+```
+
+
+El cálculo de la potencia estadítica muestra en este caso que es aceptable, ya que los resultados estadísticos son significativos.
+
+
+## Correlación parcial
+
+
+A continuación evaluamos la correlación parcial entre puntos recibidos y goles marcados según la tercera variable de goles de diferencia.
+
+
+```{r}
+pcor.test(x=eurosoccer$Points,
+          y=eurosoccer$GoalsScored,
+          z=eurosoccer$GoalDifference)
+```
+
+
+Lo que muestra una correlación no significativa (t(18)=1.582, p=.142, r=.15).
